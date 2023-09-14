@@ -1,0 +1,23 @@
+{
+  "name" : "cpp",
+  "version-string" : "1.0.0",
+  "builtin-baseline" : "2c401863dd54a640aeb26ed736c55489c079323b",
+  "dependencies" : [ {
+    "name" : "sdl2",
+    "version>=" : "2.28.2",
+    "$comment" : "    find_package(SDL2 CONFIG REQUIRED)\n\n    target_link_libraries(main\n\n        PRIVATE\n\n        $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>\n\n        $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>\n\n    )\n"
+  }, {
+    "name" : "sdl2-net",
+    "version>=" : "2.2.0#1"
+  }, {
+    "name" : "imgui",
+    "version>=" : "1.89.9",
+    "features": [
+      "opengl3-binding",
+      "sdl2-binding"
+    ]
+  }, {
+    "name" : "glad",
+    "version>=" : "0.1.36"
+  } ]
+}
