@@ -1,0 +1,1 @@
+int initSDL(std::string& glsl_version);

@@ -12,82 +12,24 @@
 #include "imgui_impl_sdl2.h"
 
 #include "functions.h"
+#include "core/init.h"
+#include "core/window.h"
 
 int windowWidth = 1280,
         windowHeight = 720;
 
 int main(int argc, char *argv[])
 {
-    std::cout << "[" << currentTime(std::chrono::system_clock::now()) << "] " << "Start\n- - -\n\n";
-
-
-    // initiate SDL
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) != 0)
+    std::string glsl_version;
+    if (initSDL(glsl_version) != 0)
     {
-        printf("[ERROR] %s\n", SDL_GetError());
+        std::cerr << "[ERROR] Failed to initialize SDL: "
+                  << SDL_GetError() << std::endl;
         return -1;
     }
 
-    if(SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
-    {
-        printf("[ERROR] %s\n", SDL_GetError());
-        return -1;
-    }
 
-    SDL_version compiled;
-    SDL_VERSION(&compiled);
-    std::ostringstream compiledVal;
-    compiledVal << "Compiled with "
-                << std::to_string(compiled.major)
-                << "." << std::to_string(compiled.minor)
-                << "." << std::to_string(compiled.patch);
-
-    SDL_version linked;
-    SDL_GetVersion(&linked);
-    std::ostringstream linkedVal;
-    linkedVal << "Linked with "
-              << std::to_string(linked.major)
-              << "." << std::to_string(linked.minor)
-              << "." << std::to_string(linked.patch);
-
-
-    // setup SDL window
-
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-
-    SDL_GL_SetAttribute(
-            SDL_GL_CONTEXT_PROFILE_MASK,
-            SDL_GL_CONTEXT_PROFILE_CORE
-    );
-
-    std::string glsl_version = "";
-#ifdef __APPLE__
-    // GL 3.2 Core + GLSL 150
-    glsl_version = "#version 150";
-    SDL_GL_SetAttribute( // required on Mac OS
-        SDL_GL_CONTEXT_FLAGS,
-        SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
-        );
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-#elif __linux__
-    // GL 3.2 Core + GLSL 150
-    glsl_version = "#version 150";
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-#elif _WIN32
-    // GL 3.0 + GLSL 130
-    glsl_version = "#version 130";
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-#endif
-
-
-    SDL_WindowFlags window_flags = (SDL_WindowFlags)(
+    /*SDL_WindowFlags window_flags = (SDL_WindowFlags)(
             SDL_WINDOW_OPENGL
             | SDL_WINDOW_RESIZABLE
             | SDL_WINDOW_ALLOW_HIGHDPI
@@ -101,16 +43,18 @@ int main(int argc, char *argv[])
             window_flags
     );
     // limit to which minimum size user can resize the window
-    SDL_SetWindowMinimumSize(window, 500, 300);
+    SDL_SetWindowMinimumSize(window, 500, 300);*/
+    Window* window = new Window();
 
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+
+    SDL_GLContext gl_context = SDL_GL_CreateContext(window->window_handle);
     if (gl_context == NULL)
     {
         std::cerr << "[ERROR] Failed to create a GL context: "
                   << SDL_GetError() << std::endl;
         return -1;
     }
-    SDL_GL_MakeCurrent(window, gl_context);
+    SDL_GL_MakeCurrent(window->window_handle, gl_context);
 
     // enable VSync
     SDL_GL_SetSwapInterval(1);
@@ -173,7 +117,7 @@ int main(int argc, char *argv[])
     setImGuiStyle();
 
     // setup platform/renderer bindings
-    ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+    ImGui_ImplSDL2_InitForOpenGL(window->window_handle, gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version.c_str());
 
     bool show_demo_window = false;
@@ -224,13 +168,13 @@ int main(int argc, char *argv[])
                         case SDLK_f:
                             if (event.key.keysym.mod & KMOD_CTRL)
                             {
-                                if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN_DESKTOP)
+                                if (SDL_GetWindowFlags(window->window_handle) & SDL_WINDOW_FULLSCREEN_DESKTOP)
                                 {
-                                    SDL_SetWindowFullscreen(window, 0);
+                                    SDL_SetWindowFullscreen(window->window_handle, 0);
                                 }
                                 else
                                 {
-                                    SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                                    SDL_SetWindowFullscreen(window->window_handle, SDL_WINDOW_FULLSCREEN_DESKTOP);
                                 }
                             }
                             break;
@@ -297,7 +241,7 @@ int main(int argc, char *argv[])
 
         // start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplSDL2_NewFrame(window);
+        ImGui_ImplSDL2_NewFrame(window->window_handle);
         ImGui::NewFrame();
 
         // standard demo window
@@ -309,7 +253,7 @@ int main(int argc, char *argv[])
 
             int sdl_width = 0, sdl_height = 0, controls_width = 0;
             // get the window size as a base for calculating widgets geometry
-            SDL_GetWindowSize(window, &sdl_width, &sdl_height);
+            SDL_GetWindowSize(window->window_handle, &sdl_width, &sdl_height);
             controls_width = sdl_width;
             // make controls widget width to be 1/3 of the main window width
             if ((controls_width /= 3) < 300) { controls_width = 300; }
@@ -420,7 +364,7 @@ int main(int argc, char *argv[])
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        SDL_GL_SwapWindow(window);
+        SDL_GL_SwapWindow(window->window_handle);
     }
 
     ImGui_ImplOpenGL3_Shutdown();
@@ -428,7 +372,7 @@ int main(int argc, char *argv[])
     ImGui::DestroyContext();
 
     SDL_GL_DeleteContext(gl_context);
-    SDL_DestroyWindow(window);
+    SDL_DestroyWindow(window->window_handle);
     SDL_Quit();
 
     std::cout << "\n- - -\n" << "[" << currentTime(std::chrono::system_clock::now()) << "] " << "Quit\n";

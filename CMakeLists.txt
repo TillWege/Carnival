@@ -10,6 +10,10 @@ set(sources
         main.cpp
         imgui-style.h
         functions.h
+        core/init.cpp
+        core/init.h
+        core/window.cpp
+        core/window.h
 )
 
 add_executable(cpp_ge ${sources})
