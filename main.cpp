@@ -2,7 +2,6 @@
 #define _CRT_SECURE_NO_DEPRECATE
 
 // C++
-//#include <filesystem>
 #include <vector>
 // SDL
 #include "glad/glad.h"
@@ -21,17 +20,15 @@ int main(int argc, char *argv[])
 {
     std::cout << "[" << currentTime(std::chrono::system_clock::now()) << "] " << "Start\n- - -\n\n";
 
-    // std::vector<std::string> files;
-    // auto currentPath = std::filesystem::current_path();
-    // //std::cout << currentPath.string();
-    // for (const auto &entry : std::filesystem::directory_iterator(currentPath))
-    // {
-    //     files.push_back(entry.path().filename().string().data());
-    //     //std::cout << entry.path().filename() << std::endl;
-    // }
 
     // initiate SDL
-    if (SDL_Init(SDL_INIT_VIDEO) != 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) != 0)
+    {
+        printf("[ERROR] %s\n", SDL_GetError());
+        return -1;
+    }
+
+    if(SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
     {
         printf("[ERROR] %s\n", SDL_GetError());
         return -1;
@@ -44,7 +41,6 @@ int main(int argc, char *argv[])
                 << std::to_string(compiled.major)
                 << "." << std::to_string(compiled.minor)
                 << "." << std::to_string(compiled.patch);
-    //std::cout << compiledVal.str() << std::endl;
 
     SDL_version linked;
     SDL_GetVersion(&linked);
@@ -53,7 +49,7 @@ int main(int argc, char *argv[])
               << std::to_string(linked.major)
               << "." << std::to_string(linked.minor)
               << "." << std::to_string(linked.patch);
-    //std::cout << linkedVal.str() << std::endl;
+
 
     // setup SDL window
 
@@ -89,6 +85,7 @@ int main(int argc, char *argv[])
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 #endif
+
 
     SDL_WindowFlags window_flags = (SDL_WindowFlags)(
             SDL_WINDOW_OPENGL
@@ -132,6 +129,28 @@ int main(int argc, char *argv[])
               << glGetString(GL_RENDERER)
               << std::endl;
 
+    std::cout << "[INFO] OpenGL version: "
+              << glGetString(GL_VERSION)
+              << std::endl;
+
+    std::cout << "[INFO] OpenGL vendor: "
+              << glGetString(GL_VENDOR)
+              << std::endl;
+
+    std::cout << "[INFO] OpenGL shading language version: "
+              << glGetString(GL_SHADING_LANGUAGE_VERSION)
+              << std::endl;
+
+    int nNumExtensions;
+    glGetIntegerv(GL_NUM_EXTENSIONS, &nNumExtensions);
+
+    for(int i = 0; i < nNumExtensions; i++)
+    {
+        std::cout << "[INFO] OpenGL extension: "
+                  << glGetStringi(GL_EXTENSIONS, i)
+                  << std::endl;
+    }
+
     // apparently, that shows maximum supported version
     std::cout << "[INFO] OpenGL from glad: "
               << GLVersion.major
@@ -139,15 +158,6 @@ int main(int argc, char *argv[])
               << GLVersion.minor
               << std::endl;
 
-    // int sdlOpenGLmajor = 0,
-    //     sdlOpenGLminor = 0;
-    // SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &sdlOpenGLmajor);
-    // SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &sdlOpenGLminor);
-    // std::cout << "[INFO] OpenGL from SDL: "
-    //           << sdlOpenGLmajor
-    //           << "."
-    //           << sdlOpenGLminor
-    //           << std::endl;
 
     glViewport(0, 0, windowWidth, windowHeight);
 
@@ -172,6 +182,8 @@ int main(int argc, char *argv[])
     ImVec4 background = ImVec4(35/255.0f, 35/255.0f, 35/255.0f, 1.00f);
 
     glClearColor(background.x, background.y, background.z, background.w);
+    SDL_GameController* controller = nullptr;
+
     // --- rendering loop
     bool loop = true;
     while (loop)
@@ -198,11 +210,6 @@ int main(int argc, char *argv[])
                         case SDL_WINDOWEVENT_RESIZED:
                             windowWidth = event.window.data1;
                             windowHeight = event.window.data2;
-                            // std::cout << "[INFO] Window size: "
-                            //           << windowWidth
-                            //           << "x"
-                            //           << windowHeight
-                            //           << std::endl;
                             glViewport(0, 0, windowWidth, windowHeight);
                             break;
                     }
@@ -213,6 +220,75 @@ int main(int argc, char *argv[])
                     {
                         case SDLK_ESCAPE:
                             loop = false;
+                            break;
+                        case SDLK_f:
+                            if (event.key.keysym.mod & KMOD_CTRL)
+                            {
+                                if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN_DESKTOP)
+                                {
+                                    SDL_SetWindowFullscreen(window, 0);
+                                }
+                                else
+                                {
+                                    SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                                }
+                            }
+                            break;
+                        case SDLK_v:
+                            if (event.key.keysym.mod & KMOD_CTRL)
+                            {
+                                SDL_GL_SetSwapInterval(!SDL_GL_GetSwapInterval());
+                            }
+                            break;
+                        case SDLK_k:
+                            if(controller != nullptr)
+                            {
+                                SDL_GameControllerClose(controller);
+                                controller = nullptr;
+                                std::cout << "[INFO] Controller disconnected" << std::endl;
+                            }
+                            else
+                            {
+                                std::cout << "[ERROR] No controller connected" << std::endl;
+                            }
+                            break;
+                        case SDLK_h:
+                        {
+                            if(controller == nullptr) { break; }
+                            SDL_Joystick* joystick = SDL_GameControllerGetJoystick(controller);
+                            if(joystick == nullptr) { break; }
+
+                            int res = SDL_JoystickRumble(joystick, 0xFFFF, 0xFFFF, 1000);
+                            std::cout << "[INFO] Rumble result: " << res << std::endl;
+                            break;
+                        }
+                        case SDLK_j:
+                            if(controller == nullptr)
+                            {
+                                SDL_JoystickUpdate();
+                                int joyStickCount = SDL_NumJoysticks();
+                                if(joyStickCount != 0)
+                                {
+                                    controller = SDL_GameControllerOpen(0);
+                                    if(controller != nullptr)
+                                    {
+                                        std::cout << "[INFO] Controller connected" << std::endl;
+                                    }
+                                    else
+                                    {
+                                        std::cout << "[ERROR] Controller not connected" << std::endl;
+                                        std::cout << SDL_GetError() << std::endl;
+                                    }
+                                }
+                                else
+                                {
+                                    std::cout << "[ERROR] No controller connected" << std::endl;
+                                }
+                            }
+                            else
+                            {
+                                std::cout << "[ERROR] Controller already connected" << std::endl;
+                            }
                             break;
                     }
                     break;
@@ -267,8 +343,8 @@ int main(int argc, char *argv[])
 
             ImGui::Dummy(ImVec2(0.0f, 3.0f));
             ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "SDL");
-            ImGui::Text("%s", compiledVal.str().c_str());
-            ImGui::Text("%s", linkedVal.str().c_str());
+            /*ImGui::Text("%s", compiledVal.str().c_str());
+            ImGui::Text("%s", linkedVal.str().c_str());*/
 
             ImGui::Dummy(ImVec2(0.0f, 10.0f));
             ImGui::Separator();
