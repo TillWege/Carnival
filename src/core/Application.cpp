@@ -1,10 +1,12 @@
-#include "glad/glad.h"
+#include <fstream>
+#include <vector>
+#include <filesystem>
 #include "../common/imgui-style.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl2.h"
 #include "../common/functions.h"
 #include "Application.h"
-
+#include "../common/shader.h"
 
 using namespace cpp_ge;
 
@@ -16,8 +18,15 @@ namespace cpp_ge::core
         InitOpenGl();
         InitImGui();
 
+        std::cout << "Current path is " << std::filesystem::current_path() << std::endl << std::flush;
 
-        glClearColor(0.2, 0.2, 0.2, 1.0);
+        auto currentPath = std::filesystem::current_path();
+
+        auto vertPath = currentPath / "src" / "shader" / "test.vert";
+        auto fragPath = currentPath / "src" / "shader" / "test.frag";
+
+        rendering_context.shader_program = LoadShaders(vertPath.string().c_str(), fragPath.string().c_str());
+        glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
     }
 
     Application::~Application() {
@@ -98,7 +107,7 @@ namespace cpp_ge::core
                   << std::endl;
 
 
-        glViewport(0, 0, app_state.window_width, app_state.window_height);
+        glViewport(300, 0, app_state.window_width - 300, app_state.window_height);
     }
 
     void Application::InitImGui() const {
@@ -164,7 +173,7 @@ namespace cpp_ge::core
         rendering_context.glsl_version = "#version 130";
         result = result | SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
         result = result | SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        result = result | SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+        result = result | SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 #endif
 
         if (result != 0)
@@ -193,7 +202,7 @@ namespace cpp_ge::core
                         case SDL_WINDOWEVENT_RESIZED:
                             app_state.window_width = event.window.data1;
                             app_state.window_height = event.window.data2;
-                            glViewport(0, 0, app_state.window_width, app_state.window_height);
+                            glViewport(300, 0, app_state.window_width - 300, app_state.window_height);
                             break;
                     }
                     break;
@@ -282,26 +291,66 @@ namespace cpp_ge::core
         }
     }
 
+
+    static const GLfloat g_vertex_buffer_data[] = {
+            -1.0f, -1.0f, 0.0f,
+            1.0f, -1.0f, 0.0f,
+            0.0f,  1.0f, 0.0f,
+    };
+
+    void Application::setupTriangle() {
+
+        glGenVertexArrays(1, &rendering_context.VertexArrayID);
+        glBindVertexArray(rendering_context.VertexArrayID);
+        // This will identify our vertex buffer
+        // Generate 1 buffer, put the resulting identifier in vertexbuffer
+        glGenBuffers(1, &rendering_context.vertex_buffer);
+        // The following commands will talk about our 'vertexbuffer' buffer
+        glBindBuffer(GL_ARRAY_BUFFER, rendering_context.vertex_buffer);
+        // Give our vertices to OpenGL.
+        glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+
+    }
+
     void Application::render() {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-        // start the Dear ImGui frame
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+        // 1st attribute buffer : vertices
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, rendering_context.vertex_buffer);
+        glVertexAttribPointer(
+                0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+                3,                  // size
+                GL_FLOAT,           // type
+                GL_FALSE,           // normalized?
+                0,                  // stride
+                (void*) nullptr     // array buffer offset
+        );
+        // Draw the triangle !
+        glUseProgram(rendering_context.shader_program);
+
+        glDrawArrays(GL_TRIANGLES, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
+        glDisableVertexAttribArray(0);
+
+        // ImGui Rendering
+
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(rendering_context.window_handle);
-        ImGui::NewFrame();
-
-        // standard demo window
-        if (app_state.show_demo_window) {
-            ImGui::ShowDemoWindow(&app_state.show_demo_window);
-        }
 
         // a window is defined by Begin/End pair
         {
+            ImGui::NewFrame();
+            // standard demo window
+            if (app_state.show_demo_window) {
+                ImGui::ShowDemoWindow(&app_state.show_demo_window);
+            }
+
             int sdl_width, sdl_height, controls_width;
             // get the window size as a base for calculating widgets geometry
             SDL_GetWindowSize(rendering_context.window_handle, &sdl_width, &sdl_height);
-            controls_width = sdl_width;
-            // make controls widget width to be 1/3 of the main window width
-            if ((controls_width /= 3) < 300) { controls_width = 300; }
+            controls_width = 300;
 
             // position the controls widget in the top-right corner with some margin
             ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
@@ -402,14 +451,12 @@ namespace cpp_ge::core
             }
 
             ImGui::End();
+            // rendering
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         }
-
-        // rendering
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         SDL_GL_SwapWindow(rendering_context.window_handle);
     }
-
 
 }

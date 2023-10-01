@@ -3,6 +3,7 @@
 
 #include <string>
 #include <SDL2/SDL.h>
+#include "glad/glad.h"
 
 namespace cpp_ge::core
 {
@@ -13,6 +14,9 @@ namespace cpp_ge::core
         SDL_Window* window_handle = nullptr;
         SDL_GLContext gl_context = nullptr;
         std::string glsl_version;
+        GLuint shader_program = 0;
+        GLuint vertex_buffer = 0;
+        GLuint VertexArrayID = 0;
     };
 
     struct InputContext {
@@ -34,6 +38,7 @@ namespace cpp_ge::core
         Application();
         ~Application();
         void Run();
+        void setupTriangle();
     private:
         RenderingContext rendering_context;
         InputContext input_context;

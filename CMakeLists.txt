@@ -8,11 +8,12 @@ find_package(imgui CONFIG REQUIRED)
 
 set(sources
         src/main.cpp
-        src/imgui-style.h
-        src/functions.h
+        src/common/imgui-style.h
+        src/common/functions.h
         src/core/Application.cpp
         src/core/Application.h
-        src/global.h
+        src/common/global.h
+        src/common/shader.h
 )
 
 add_executable(cpp_ge ${sources})
