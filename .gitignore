@@ -33,3 +33,6 @@
 cmake-build-debug
 .vs
 out
+
+# VCPKG files
+vcpkg_installed

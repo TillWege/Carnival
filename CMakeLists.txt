@@ -7,13 +7,12 @@ find_package(glad CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 
 set(sources
-        main.cpp
-        imgui-style.h
-        functions.h
-        core/init.cpp
-        core/init.h
-        core/window.cpp
-        core/window.h
+        src/main.cpp
+        src/imgui-style.h
+        src/functions.h
+        src/core/Application.cpp
+        src/core/Application.h
+        src/global.h
 )
 
 add_executable(cpp_ge ${sources})

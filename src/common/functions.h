@@ -3,6 +3,7 @@
 #include <chrono>
 #include <ctime>
 #include <iomanip>
+#include "global.h"
 
 std::string currentTime(std::chrono::time_point<std::chrono::system_clock> now)
 {
@@ -19,4 +20,9 @@ std::string currentTime(std::chrono::time_point<std::chrono::system_clock> now)
                       << " " << std::put_time(localtime(&timeNow), "%z");
 
     return currentTimeStream.str();
+}
+
+void log()
+{
+    std::cout << app << std::endl;
 }
