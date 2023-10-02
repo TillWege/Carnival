@@ -1,4 +1,3 @@
-#include <fstream>
 #include <vector>
 #include <filesystem>
 #include "../common/imgui-style.h"
@@ -10,8 +9,7 @@
 
 using namespace cpp_ge;
 
-namespace cpp_ge::core
-{
+namespace cpp_ge::core {
     Application::Application() {
         InitSDL();
         InitWindow();
@@ -42,8 +40,7 @@ namespace cpp_ge::core
     }
 
     void Application::Run() {
-        while (app_state.running)
-        {
+        while (app_state.running) {
             HandleEvents();
             render();
         }
@@ -52,8 +49,7 @@ namespace cpp_ge::core
 
     void Application::InitOpenGl() {
         rendering_context.gl_context = SDL_GL_CreateContext(rendering_context.window_handle);
-        if (rendering_context.gl_context == nullptr)
-        {
+        if (rendering_context.gl_context == nullptr) {
             std::cerr << "[ERROR] Failed to create a GL context: "
                       << SDL_GetError() << std::endl;
             throw EXIT_FAILURE;
@@ -62,16 +58,17 @@ namespace cpp_ge::core
 
         // enable VSync
         SDL_GL_SetSwapInterval(1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
 
-        if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
-        {
+        if (!gladLoadGLLoader((GLADloadproc) SDL_GL_GetProcAddress)) {
             std::cerr << "[ERROR] Couldn't initialize glad" << std::endl;
             throw EXIT_FAILURE;
-        }
-        else
-        {
+        } else {
             std::cout << "[INFO] glad initialized" << std::endl;
         }
+
+        glEnable(GL_MULTISAMPLE);
 
         std::cout << "[INFO] OpenGL renderer: "
                   << glGetString(GL_RENDERER)
@@ -92,8 +89,7 @@ namespace cpp_ge::core
         int nNumExtensions;
         glGetIntegerv(GL_NUM_EXTENSIONS, &nNumExtensions);
 
-        for(int i = 0; i < nNumExtensions; i++)
-        {
+        for (int i = 0; i < nNumExtensions; i++) {
             std::cout << "[INFO] OpenGL extension: "
                       << glGetStringi(GL_EXTENSIONS, i)
                       << std::endl;
@@ -107,13 +103,14 @@ namespace cpp_ge::core
                   << std::endl;
 
 
-        glViewport(300, 0, app_state.window_width - 300, app_state.window_height);
+        glViewport(app_state.drawer_width, 0, app_state.window_width - app_state.drawer_width, app_state.window_height);
     }
 
     void Application::InitImGui() const {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        ImGuiIO &io = ImGui::GetIO();
+        (void) io;
 
         setImGuiStyle();
 
@@ -122,13 +119,12 @@ namespace cpp_ge::core
     }
 
     void Application::InitWindow() {
-        auto window_flags = (SDL_WindowFlags)(
+        auto window_flags = (SDL_WindowFlags) (
                 SDL_WINDOW_OPENGL
                 | SDL_WINDOW_RESIZABLE
-                | SDL_WINDOW_ALLOW_HIGHDPI
         );
         rendering_context.window_handle = SDL_CreateWindow(
-                "Dear ImGui SDL",
+                "CPP_GE",
                 SDL_WINDOWPOS_CENTERED,
                 SDL_WINDOWPOS_CENTERED,
                 defWindowWidth,
@@ -156,10 +152,10 @@ namespace cpp_ge::core
 #ifdef __APPLE__
         // GL 3.2 Core + GLSL 150
         rendering_context.glsl_version = "#version 150";
-        result = result | SDL_GL_SetAttribute( // required on Mac OS
-            SDL_GL_CONTEXT_FLAGS,
-            SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
-            );
+        result = result | SDL_GL_SetAttribute( // required on macOS
+                SDL_GL_CONTEXT_FLAGS,
+                SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
+        );
         result = result | SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
         result = result | SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 #elif __linux__
@@ -176,8 +172,7 @@ namespace cpp_ge::core
         result = result | SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 #endif
 
-        if (result != 0)
-        {
+        if (result != 0) {
             std::cerr << "[ERROR] Failed to initialize SDL: "
                       << SDL_GetError() << std::endl;
             throw EXIT_FAILURE;
@@ -186,99 +181,80 @@ namespace cpp_ge::core
 
     void Application::HandleEvents() {
         SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
+        while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
 
-            switch (event.type)
-            {
+            switch (event.type) {
                 case SDL_QUIT:
                     app_state.running = false;
                     break;
 
                 case SDL_WINDOWEVENT:
-                    switch (event.window.event)
-                    {
+                    switch (event.window.event) {
                         case SDL_WINDOWEVENT_RESIZED:
                             app_state.window_width = event.window.data1;
                             app_state.window_height = event.window.data2;
-                            glViewport(300, 0, app_state.window_width - 300, app_state.window_height);
+                            glViewport(app_state.drawer_width, 0, app_state.window_width - app_state.drawer_width,
+                                       app_state.window_height);
                             break;
                     }
                     break;
 
                 case SDL_KEYDOWN:
-                    switch (event.key.keysym.sym)
-                    {
+                    switch (event.key.keysym.sym) {
                         case SDLK_ESCAPE:
                             app_state.running = false;
                             break;
                         case SDLK_f:
-                            if (event.key.keysym.mod & KMOD_CTRL)
-                            {
-                                if (SDL_GetWindowFlags(rendering_context.window_handle) & SDL_WINDOW_FULLSCREEN_DESKTOP)
-                                {
+                            if (event.key.keysym.mod & KMOD_CTRL) {
+                                if (SDL_GetWindowFlags(rendering_context.window_handle) &
+                                    SDL_WINDOW_FULLSCREEN_DESKTOP) {
                                     SDL_SetWindowFullscreen(rendering_context.window_handle, 0);
-                                }
-                                else
-                                {
-                                    SDL_SetWindowFullscreen(rendering_context.window_handle, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                                } else {
+                                    SDL_SetWindowFullscreen(rendering_context.window_handle,
+                                                            SDL_WINDOW_FULLSCREEN_DESKTOP);
                                 }
                             }
                             break;
                         case SDLK_v:
-                            if (event.key.keysym.mod & KMOD_CTRL)
-                            {
+                            if (event.key.keysym.mod & KMOD_CTRL) {
                                 SDL_GL_SetSwapInterval(!SDL_GL_GetSwapInterval());
                             }
                             break;
                         case SDLK_k:
-                            if(input_context.controller != nullptr)
-                            {
+                            if (input_context.controller != nullptr) {
                                 SDL_GameControllerClose(input_context.controller);
                                 input_context.controller = nullptr;
                                 std::cout << "[INFO] Controller disconnected" << std::endl;
-                            }
-                            else
-                            {
+                            } else {
                                 std::cout << "[ERROR] No controller connected" << std::endl;
                             }
                             break;
-                        case SDLK_h:
-                        {
-                            if(input_context.controller == nullptr) { break; }
+                        case SDLK_h: {
+                            if (input_context.controller == nullptr) { break; }
                             input_context.joystick = SDL_GameControllerGetJoystick(input_context.controller);
-                            if(input_context.joystick == nullptr) { break; }
+                            if (input_context.joystick == nullptr) { break; }
 
                             int res = SDL_JoystickRumble(input_context.joystick, 0xFFFF, 0xFFFF, 1000);
                             std::cout << "[INFO] Rumble result: " << res << std::endl;
                             break;
                         }
                         case SDLK_j:
-                            if(input_context.controller == nullptr)
-                            {
+                            if (input_context.controller == nullptr) {
                                 SDL_JoystickUpdate();
                                 int joyStickCount = SDL_NumJoysticks();
-                                if(joyStickCount != 0)
-                                {
+                                if (joyStickCount != 0) {
                                     input_context.controller = SDL_GameControllerOpen(0);
-                                    if(input_context.controller != nullptr)
-                                    {
+                                    if (input_context.controller != nullptr) {
                                         std::cout << "[INFO] Controller connected" << std::endl;
-                                    }
-                                    else
-                                    {
+                                    } else {
                                         std::cout << "[ERROR] Controller not connected" << std::endl;
                                         std::cout << SDL_GetError() << std::endl;
                                     }
-                                }
-                                else
-                                {
+                                } else {
                                     std::cout << "[ERROR] No controller connected" << std::endl;
                                 }
-                            }
-                            else
-                            {
+                            } else {
                                 std::cout << "[ERROR] Controller already connected" << std::endl;
                             }
                             break;
@@ -293,30 +269,38 @@ namespace cpp_ge::core
 
 
     static const GLfloat g_vertex_buffer_data[] = {
+            /*-1.0f, 1.0f, 0.0f,
+            1.0f, 1.0f, 0.0f,
+            -1.0f, -1.0f, 0.0f,
+            1.0f, 1.0f, 0.0f,
+            -1.0f, -1.0f, 0.0f,
+            1.0f, -1.0f, 0.0f,*/
+            -1.0f, 1.0f, 0.0f,
+            1.0f, 1.0f, 0.0f,
             -1.0f, -1.0f, 0.0f,
             1.0f, -1.0f, 0.0f,
-            0.0f,  1.0f, 0.0f,
     };
 
     void Application::setupTriangle() {
 
         glGenVertexArrays(1, &rendering_context.VertexArrayID);
         glBindVertexArray(rendering_context.VertexArrayID);
-        // This will identify our vertex buffer
-        // Generate 1 buffer, put the resulting identifier in vertexbuffer
+// This will identify our vertex buffer
+// Generate 1 buffer, put the resulting identifier in vertex-buffer
         glGenBuffers(1, &rendering_context.vertex_buffer);
-        // The following commands will talk about our 'vertexbuffer' buffer
+// The following commands will talk about our 'vertex-buffer' buffer
         glBindBuffer(GL_ARRAY_BUFFER, rendering_context.vertex_buffer);
-        // Give our vertices to OpenGL.
+// Give our vertices to OpenGL.
         glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 
     }
 
     void Application::render() {
+        glViewport(app_state.drawer_width, 0, app_state.window_width - app_state.drawer_width, app_state.window_height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-        // 1st attribute buffer : vertices
+// 1st attribute buffer : vertices
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, rendering_context.vertex_buffer);
         glVertexAttribPointer(
@@ -325,44 +309,48 @@ namespace cpp_ge::core
                 GL_FLOAT,           // type
                 GL_FALSE,           // normalized?
                 0,                  // stride
-                (void*) nullptr     // array buffer offset
+                (void *) nullptr     // array buffer offset
         );
-        // Draw the triangle !
+// Draw the triangle !
         glUseProgram(rendering_context.shader_program);
 
-        glDrawArrays(GL_TRIANGLES, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); // Starting from vertex 0; 3 vertices total -> 1 triangle
         glDisableVertexAttribArray(0);
 
-        // ImGui Rendering
+// ImGui Rendering
 
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(rendering_context.window_handle);
 
-        // a window is defined by Begin/End pair
+// a window is defined by Begin/End pair
         {
             ImGui::NewFrame();
-            // standard demo window
+// standard demo window
             if (app_state.show_demo_window) {
                 ImGui::ShowDemoWindow(&app_state.show_demo_window);
             }
 
-            int sdl_width, sdl_height, controls_width;
-            // get the window size as a base for calculating widgets geometry
+            int sdl_width, sdl_height;
+// get the window size as a base for calculating widgets geometry
             SDL_GetWindowSize(rendering_context.window_handle, &sdl_width, &sdl_height);
-            controls_width = 300;
 
-            // position the controls widget in the top-right corner with some margin
+
+// position the controls widget in the top-right corner with some margin
             ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-            // here we set the calculated width and also make the height to
-            // be the height of the main window also with some margin
+// here we set the calculated width and also make the height to
+// be the height of the main window also with some margin
+            ImGui::SetNextWindowSizeConstraints(ImVec2(300.f, -1.f), ImVec2(INFINITY, -1.f));
             ImGui::SetNextWindowSize(
-                    ImVec2(float(controls_width), float(sdl_height)),
+                    ImVec2(float(app_state.drawer_width), float(sdl_height)),
                     ImGuiCond_Always
             );
-            // create a window and append into it
+// create a window and append into it
 
-            ImGui::Begin("Controls", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+            ImGui::Begin("Controls", nullptr,
+                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+
+            app_state.drawer_width = ImGui::GetWindowWidth();
 
             ImGui::Dummy(ImVec2(0.0f, 1.0f));
             ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Time");
@@ -373,7 +361,7 @@ namespace cpp_ge::core
             ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Platform");
             ImGui::Text("%s", SDL_GetPlatform());
             ImGui::Text("CPU cores: %d", SDL_GetCPUCount());
-            ImGui::Text("RAM: %.2f GB", (double)SDL_GetSystemRAM() / 1024.0f);
+            ImGui::Text("RAM: %.2f GB", (double) SDL_GetSystemRAM() / 1024.0f);
 
             ImGui::Dummy(ImVec2(0.0f, 3.0f));
             ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Application");
@@ -387,9 +375,8 @@ namespace cpp_ge::core
             ImGui::Separator();
             ImGui::Dummy(ImVec2(0.0f, 10.0f));
 
-            // buttons and most other widgets return true when clicked/edited/activated
-            if (ImGui::Button("Counter button"))
-            {
+// buttons and most other widgets return true when clicked/edited/activated
+            if (ImGui::Button("Counter button")) {
                 std::cout << "counter button clicked\n";
                 app_state.counter++;
                 if (app_state.counter == 9) { ImGui::OpenPopup("Easter egg"); }
@@ -397,25 +384,21 @@ namespace cpp_ge::core
             ImGui::SameLine();
             ImGui::Text("counter = %d", app_state.counter);
 
-            if (ImGui::BeginPopupModal("Easter egg", nullptr))
-            {
+            if (ImGui::BeginPopupModal("Easter egg", nullptr)) {
                 ImGui::Text("Ho-ho, you found me!");
                 if (ImGui::Button("Buy Ultimate Orb")) { ImGui::CloseCurrentPopup(); }
                 ImGui::EndPopup();
             }
 
             ImGui::Dummy(ImVec2(0.0f, 15.0f));
-            if (!app_state.show_demo_window)
-            {
-                if (ImGui::Button("Open standard demo"))
-                {
+            if (!app_state.show_demo_window) {
+                if (ImGui::Button("Open standard demo")) {
                     app_state.show_demo_window = true;
                 }
             }
 
             ImGui::Checkbox("show a custom window", &app_state.show_another_window);
-            if (app_state.show_another_window)
-            {
+            if (app_state.show_another_window) {
                 ImGui::SetNextWindowSize(
                         ImVec2(400.0f, 350.0f),
                         ImGuiCond_FirstUseEver // after first launch it will use values from imgui.ini
@@ -441,8 +424,7 @@ namespace cpp_ge::core
                 //     );
 
                 ImGui::Dummy(ImVec2(0.0f, 1.0f));
-                if (ImGui::Button("Close"))
-                {
+                if (ImGui::Button("Close")) {
                     std::cout << "close button clicked\n";
                     app_state.show_another_window = false;
                 }
@@ -451,7 +433,7 @@ namespace cpp_ge::core
             }
 
             ImGui::End();
-            // rendering
+// rendering
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         }

@@ -5,13 +5,12 @@
 #include <SDL2/SDL.h>
 #include "glad/glad.h"
 
-namespace cpp_ge::core
-{
+namespace cpp_ge::core {
     const int defWindowWidth = 1280,
             defWindowHeight = 720;
 
     struct RenderingContext {
-        SDL_Window* window_handle = nullptr;
+        SDL_Window *window_handle = nullptr;
         SDL_GLContext gl_context = nullptr;
         std::string glsl_version;
         GLuint shader_program = 0;
@@ -20,11 +19,12 @@ namespace cpp_ge::core
     };
 
     struct InputContext {
-        SDL_GameController* controller = nullptr;
-        SDL_Joystick* joystick = nullptr;
+        SDL_GameController *controller = nullptr;
+        SDL_Joystick *joystick = nullptr;
     };
 
     struct ApplicationState {
+        int drawer_width = 300;
         int counter = 0;
         bool running = true;
         bool show_demo_window = false;
@@ -48,7 +48,6 @@ namespace cpp_ge::core
         void InitWindow();
         void InitOpenGl();
         void InitImGui() const;
-
         void HandleEvents();
         void render();
     };

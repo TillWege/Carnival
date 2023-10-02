@@ -36,3 +36,5 @@ out
 
 # VCPKG files
 vcpkg_installed
+CMakeFiles
+.cmake
