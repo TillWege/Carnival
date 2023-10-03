@@ -119,6 +119,11 @@ namespace cpp_ge::core {
     }
 
     void Application::InitWindow() {
+
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
+
+
         auto window_flags = (SDL_WindowFlags) (
                 SDL_WINDOW_OPENGL
                 | SDL_WINDOW_RESIZABLE
@@ -260,6 +265,13 @@ namespace cpp_ge::core {
                             break;
                         case SDLK_r:
                             log();
+                            break;
+                        case SDLK_F11:
+                            if (SDL_GetWindowFlags(rendering_context.window_handle) & SDL_WINDOW_FULLSCREEN_DESKTOP) {
+                                SDL_SetWindowFullscreen(rendering_context.window_handle, 0);
+                            } else {
+                                SDL_SetWindowFullscreen(rendering_context.window_handle, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                            }
                             break;
                     }
                     break;
