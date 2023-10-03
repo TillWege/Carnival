@@ -13,11 +13,6 @@
       "version>=": "2.2.0#1"
     },
     {
-      "name": "imgui",
-      "version>=": "1.89.9",
-      "features": ["opengl3-binding", "sdl2-binding"]
-    },
-    {
       "name": "glad",
       "version>=": "0.1.36"
     }

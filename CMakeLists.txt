@@ -4,18 +4,15 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
-find_package(imgui CONFIG REQUIRED)
 
-set(sources
-        src/main.cpp
-        src/common/imgui-style.h
-        src/common/functions.h
-        src/core/Application.cpp
-        src/core/Application.h
-        src/common/global.h
-        src/common/shader.h
+file(GLOB sources CONFIGURE_DEPENDS
+        "src/*.h" "src/*.cpp" "src/common/*.h" "src/common/*.cpp" "src/core/*.h" "src/core/*.cpp"
+        "src/external/imgui/*.h" "src/external/imgui/*.cpp"
+        "src/external/imgui/backends/imgui_impl_sdl2.h" "src/external/imgui/backends/imgui_impl_sdl2.cpp"
+        "src/external/imgui/backends/imgui_impl_opengl3.h" "src/external/imgui/backends/imgui_impl_opengl3.cpp"
 )
 
+include_directories(src/external/imgui src/external/imgui/backends)
 add_executable(cpp_ge ${sources})
 
 target_link_libraries(cpp_ge
@@ -24,4 +21,3 @@ target_link_libraries(cpp_ge
         $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
 )
 target_link_libraries(cpp_ge PRIVATE glad::glad)
-target_link_libraries(cpp_ge PRIVATE imgui::imgui)
