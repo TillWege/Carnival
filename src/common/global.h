@@ -2,12 +2,12 @@
 // Created by tillw on 01/10/2023.
 //
 
-#ifndef CPP_GE_GLOBAL_H
-#define CPP_GE_GLOBAL_H
+#ifndef CARNIVAL_GLOBAL_H
+#define CARNIVAL_GLOBAL_H
 
 #include "../core/Application.h"
 
-extern cpp_ge::core::Application* app;
+extern carnival::core::Application* app;
 
-#endif //CPP_GE_GLOBAL_H
+#endif //CARNIVAL_GLOBAL_H
 

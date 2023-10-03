@@ -7,9 +7,9 @@
 #include "Application.h"
 #include "../common/shader.h"
 
-using namespace cpp_ge;
+using namespace carnival;
 
-namespace cpp_ge::core {
+namespace carnival::core {
     Application::Application() {
         InitSDL();
         InitWindow();
@@ -129,7 +129,7 @@ namespace cpp_ge::core {
                 | SDL_WINDOW_RESIZABLE
         );
         rendering_context.window_handle = SDL_CreateWindow(
-                "CPP_GE",
+                "Carnival",
                 SDL_WINDOWPOS_CENTERED,
                 SDL_WINDOWPOS_CENTERED,
                 defWindowWidth,

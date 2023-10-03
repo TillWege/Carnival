@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.26)
-project(cpp_ge)
+project(carnival)
 set(CMAKE_CXX_STANDARD 17)
 
 find_package(SDL2 CONFIG REQUIRED)
@@ -17,9 +17,9 @@ include_directories(src/external/imgui
         src/external/glad/include
 )
 
-add_executable(cpp_ge ${sources})
+add_executable(carnival ${sources})
 
-target_link_libraries(cpp_ge
+target_link_libraries(carnival
         PRIVATE
         $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
         $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>

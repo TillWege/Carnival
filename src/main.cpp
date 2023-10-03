@@ -1,6 +1,6 @@
 #include "core/Application.h"
 
-using namespace cpp_ge::core;
+using namespace carnival::core;
 
 Application* app;
 

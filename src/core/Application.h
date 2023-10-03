@@ -1,11 +1,11 @@
-#ifndef CPP_GE_APPLICATION_H
-#define CPP_GE_APPLICATION_H
+#ifndef CARNIVAL_APPLICATION_H
+#define CARNIVAL_APPLICATION_H
 
 #include <string>
 #include <SDL2/SDL.h>
 #include "glad/glad.h"
 
-namespace cpp_ge::core {
+namespace carnival::core {
     const int defWindowWidth = 1280,
             defWindowHeight = 720;
 
@@ -55,4 +55,4 @@ namespace cpp_ge::core {
 }
 
 
-#endif //CPP_GE_APPLICATION_H
+#endif //CARNIVAL_APPLICATION_H

@@ -2,8 +2,8 @@
 // Created by tillw on 01/10/2023.
 //
 
-#ifndef CPP_GE_SHADER_H
-#define CPP_GE_SHADER_H
+#ifndef CARNIVAL_SHADER_H
+#define CARNIVAL_SHADER_H
 
 #include <fstream>
 #include <vector>
@@ -100,4 +100,4 @@ GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path
     return ProgramID;
 }
 
-#endif //CPP_GE_SHADER_H
+#endif //CARNIVAL_SHADER_H
