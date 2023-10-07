@@ -24,7 +24,9 @@ namespace carnival::core {
     };
 
     struct ApplicationState {
-        int drawer_width = 300;
+        int left_panel_width = 300;
+        int right_panel_width = 300;
+        int bottom_panel_height = 300;
         int counter = 0;
         bool running = true;
         bool show_demo_window = false;
@@ -50,6 +52,8 @@ namespace carnival::core {
         void InitImGui() const;
         void HandleEvents();
         void render();
+        void renderGUI();
+        void renderGL();
     };
 
 }

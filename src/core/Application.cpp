@@ -103,14 +103,16 @@ namespace carnival::core {
                   << std::endl;
 
 
-        glViewport(app_state.drawer_width, 0, app_state.window_width - app_state.drawer_width, app_state.window_height);
+        glViewport(app_state.left_panel_width, 0, app_state.window_width - app_state.left_panel_width, app_state.window_height);
     }
 
     void Application::InitImGui() const {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
+
         ImGuiIO &io = ImGui::GetIO();
         (void) io;
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
         setImGuiStyle();
 
@@ -199,7 +201,7 @@ namespace carnival::core {
                         case SDL_WINDOWEVENT_RESIZED:
                             app_state.window_width = event.window.data1;
                             app_state.window_height = event.window.data2;
-                            glViewport(app_state.drawer_width, 0, app_state.window_width - app_state.drawer_width,
+                            glViewport(app_state.left_panel_width, 0, app_state.window_width - app_state.left_panel_width,
                                        app_state.window_height);
                             break;
                     }
@@ -307,12 +309,154 @@ namespace carnival::core {
 
     }
 
-    void Application::render() {
-        glViewport(app_state.drawer_width, 0, app_state.window_width - app_state.drawer_width, app_state.window_height);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    void Application::renderGUI()
+    {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame(rendering_context.window_handle);
+
+        int sdl_width, sdl_height;
+        SDL_GetWindowSize(rendering_context.window_handle, &sdl_width, &sdl_height);
+
+        ImGui::NewFrame();
+
+        if (app_state.show_demo_window) {
+            ImGui::ShowDemoWindow(&app_state.show_demo_window);
+        }
+
+        ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(300.f, -1.f), ImVec2(INFINITY, -1.f));
+        ImGui::SetNextWindowSize(
+                ImVec2(float(app_state.left_panel_width), float(sdl_height)),
+                ImGuiCond_Always
+        );
+
+        ImGui::Begin("Controls", nullptr,
+                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+
+        /*app_state.left_panel_width = int(ImGui::GetWindowWidth());*/
+
+        ImGui::Dummy(ImVec2(0.0f, 1.0f));
+        ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Time");
+        ImGui::Text("%s", currentTime(std::chrono::system_clock::now()).c_str());
 
 
-// 1st attribute buffer : vertices
+        ImGui::Dummy(ImVec2(0.0f, 3.0f));
+        ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Platform");
+        ImGui::Text("%s", SDL_GetPlatform());
+        ImGui::Text("CPU cores: %d", SDL_GetCPUCount());
+        ImGui::Text("RAM: %.2f GB", (double) SDL_GetSystemRAM() / 1024.0f);
+
+        ImGui::Dummy(ImVec2(0.0f, 3.0f));
+        ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Application");
+        ImGui::Text("Main window width: %d", sdl_width);
+        ImGui::Text("Main window height: %d", sdl_height);
+
+        ImGui::Dummy(ImVec2(0.0f, 3.0f));
+        ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "SDL");
+
+        ImGui::Dummy(ImVec2(0.0f, 10.0f));
+        ImGui::Separator();
+        ImGui::Dummy(ImVec2(0.0f, 10.0f));
+
+        // buttons and most other widgets return true when clicked/edited/activated
+        if (ImGui::Button("Counter button")) {
+            std::cout << "counter button clicked\n";
+            app_state.counter++;
+            if (app_state.counter == 9) { ImGui::OpenPopup("Easter egg"); }
+        }
+        ImGui::SameLine();
+        ImGui::Text("counter = %d", app_state.counter);
+
+        if (ImGui::BeginPopupModal("Easter egg", nullptr)) {
+            ImGui::Text("Ho-ho, you found me!");
+            if (ImGui::Button("Buy Ultimate Orb")) { ImGui::CloseCurrentPopup(); }
+            ImGui::EndPopup();
+        }
+
+        ImGui::Dummy(ImVec2(0.0f, 15.0f));
+        if (!app_state.show_demo_window) {
+            if (ImGui::Button("Open standard demo")) {
+                app_state.show_demo_window = true;
+            }
+        }
+
+        ImGui::Checkbox("show a custom window", &app_state.show_another_window);
+        if (app_state.show_another_window) {
+            ImGui::SetNextWindowSize(
+                    ImVec2(400.0f, 350.0f),
+                    ImGuiCond_FirstUseEver // after first launch it will use values from imgui.ini
+            );
+            ImGui::Begin("A custom window", &app_state.show_another_window);
+            ImGui::Dummy(ImVec2(0.0f, 1.0f));
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Files in the current folder");
+
+            ImGui::Dummy(ImVec2(0.0f, 0.5f));
+
+
+            ImGui::Dummy(ImVec2(0.0f, 1.0f));
+            if (ImGui::Button("Close")) {
+                std::cout << "close button clicked\n";
+                app_state.show_another_window = false;
+            }
+
+            ImGui::End();
+        }
+
+        ImGui::End();
+
+        // Render Right Panel
+
+        ImGui::SetNextWindowPos(ImVec2(sdl_width - app_state.right_panel_width, 0), ImGuiCond_Always);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(300.f, -1.f), ImVec2(INFINITY, -1.f));
+        ImGui::SetNextWindowSize(
+                ImVec2(float(app_state.right_panel_width), float(sdl_height)),
+                ImGuiCond_Always
+        );
+
+        ImGui::Begin("Right Panel", nullptr,
+                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+
+        ImGui::Dummy(ImVec2(0.0f, 1.0f));
+        ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Time");
+        ImGui::Text("%s", currentTime(std::chrono::system_clock::now()).c_str());
+        ImGui::End();
+
+        // Bottom Panel
+        /*
+        ImGui::SetNextWindowPos(ImVec2(0, sdl_height - app_state.bottom_panel_height), ImGuiCond_Always);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(-1.f, 300.f), ImVec2(-1.f, INFINITY));
+        */
+
+        // Center Panel
+
+        ImGui::SetNextWindowPos(ImVec2(app_state.left_panel_width, 0), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(
+                ImVec2(float(sdl_width - (app_state.left_panel_width + app_state.right_panel_width)), float(sdl_height)),
+                ImGuiCond_Always
+        );
+        ImGui::Begin("Main window", nullptr,
+                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+
+        auto pos = ImGui::GetWindowPos();
+        auto size = ImGui::GetWindowSize();
+
+        app_state.left_panel_width = int(pos.x);
+        app_state.right_panel_width = int(sdl_width - (pos.x + size.x));
+
+        ImGui::Text("Hello, world!");
+
+        ImGui::End();
+
+
+        // rendering
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    }
+
+    void Application::renderGL()
+    {
+        // 1st attribute buffer : vertices
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, rendering_context.vertex_buffer);
         glVertexAttribPointer(
@@ -323,132 +467,19 @@ namespace carnival::core {
                 0,                  // stride
                 (void *) nullptr     // array buffer offset
         );
-// Draw the triangle !
+        // Draw the triangle !
         glUseProgram(rendering_context.shader_program);
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); // Starting from vertex 0; 3 vertices total -> 1 triangle
         glDisableVertexAttribArray(0);
+    }
 
-// ImGui Rendering
+    void Application::render() {
+        glViewport(app_state.left_panel_width, 0, app_state.window_width - app_state.left_panel_width, app_state.window_height);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplSDL2_NewFrame(rendering_context.window_handle);
-
-// a window is defined by Begin/End pair
-        {
-            ImGui::NewFrame();
-// standard demo window
-            if (app_state.show_demo_window) {
-                ImGui::ShowDemoWindow(&app_state.show_demo_window);
-            }
-
-            int sdl_width, sdl_height;
-// get the window size as a base for calculating widgets geometry
-            SDL_GetWindowSize(rendering_context.window_handle, &sdl_width, &sdl_height);
-
-
-// position the controls widget in the top-right corner with some margin
-            ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-// here we set the calculated width and also make the height to
-// be the height of the main window also with some margin
-            ImGui::SetNextWindowSizeConstraints(ImVec2(300.f, -1.f), ImVec2(INFINITY, -1.f));
-            ImGui::SetNextWindowSize(
-                    ImVec2(float(app_state.drawer_width), float(sdl_height)),
-                    ImGuiCond_Always
-            );
-// create a window and append into it
-
-            ImGui::Begin("Controls", nullptr,
-                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
-
-            app_state.drawer_width = ImGui::GetWindowWidth();
-
-            ImGui::Dummy(ImVec2(0.0f, 1.0f));
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Time");
-            ImGui::Text("%s", currentTime(std::chrono::system_clock::now()).c_str());
-
-
-            ImGui::Dummy(ImVec2(0.0f, 3.0f));
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Platform");
-            ImGui::Text("%s", SDL_GetPlatform());
-            ImGui::Text("CPU cores: %d", SDL_GetCPUCount());
-            ImGui::Text("RAM: %.2f GB", (double) SDL_GetSystemRAM() / 1024.0f);
-
-            ImGui::Dummy(ImVec2(0.0f, 3.0f));
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Application");
-            ImGui::Text("Main window width: %d", sdl_width);
-            ImGui::Text("Main window height: %d", sdl_height);
-
-            ImGui::Dummy(ImVec2(0.0f, 3.0f));
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "SDL");
-
-            ImGui::Dummy(ImVec2(0.0f, 10.0f));
-            ImGui::Separator();
-            ImGui::Dummy(ImVec2(0.0f, 10.0f));
-
-// buttons and most other widgets return true when clicked/edited/activated
-            if (ImGui::Button("Counter button")) {
-                std::cout << "counter button clicked\n";
-                app_state.counter++;
-                if (app_state.counter == 9) { ImGui::OpenPopup("Easter egg"); }
-            }
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", app_state.counter);
-
-            if (ImGui::BeginPopupModal("Easter egg", nullptr)) {
-                ImGui::Text("Ho-ho, you found me!");
-                if (ImGui::Button("Buy Ultimate Orb")) { ImGui::CloseCurrentPopup(); }
-                ImGui::EndPopup();
-            }
-
-            ImGui::Dummy(ImVec2(0.0f, 15.0f));
-            if (!app_state.show_demo_window) {
-                if (ImGui::Button("Open standard demo")) {
-                    app_state.show_demo_window = true;
-                }
-            }
-
-            ImGui::Checkbox("show a custom window", &app_state.show_another_window);
-            if (app_state.show_another_window) {
-                ImGui::SetNextWindowSize(
-                        ImVec2(400.0f, 350.0f),
-                        ImGuiCond_FirstUseEver // after first launch it will use values from imgui.ini
-                );
-                // the window will have a closing button that will clear the bool variable
-                ImGui::Begin("A custom window", &app_state.show_another_window);
-
-                ImGui::Dummy(ImVec2(0.0f, 1.0f));
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Files in the current folder");
-
-                //ImGui::TextColored(ImVec4(128 / 255.0f, 128 / 255.0f, 128 / 255.0f, 1.0f), "%s", currentPath.string().data());
-                ImGui::Dummy(ImVec2(0.0f, 0.5f));
-
-                // static int currentFile = 0;
-                // ImVec2 windowSize = ImGui::GetWindowSize();
-                // ImGui::PushItemWidth(windowSize.x - 15);
-                // ImGui::ListBox(
-                //     "",
-                //     &currentFile,
-                //     vector_getter,
-                //     &files,
-                //     static_cast<int>(files.size())
-                //     );
-
-                ImGui::Dummy(ImVec2(0.0f, 1.0f));
-                if (ImGui::Button("Close")) {
-                    std::cout << "close button clicked\n";
-                    app_state.show_another_window = false;
-                }
-
-                ImGui::End();
-            }
-
-            ImGui::End();
-// rendering
-            ImGui::Render();
-            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        }
+        renderGL();
+        renderGUI();
 
         SDL_GL_SwapWindow(rendering_context.window_handle);
     }
