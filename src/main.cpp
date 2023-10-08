@@ -8,6 +8,7 @@ int main(int argc, char* args[])
 {
     app = new Application();
     app->setupTriangle();
+    app->setupImage();
     app->Run();
     delete app;
     return 0;

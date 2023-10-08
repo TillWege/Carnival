@@ -10,14 +10,17 @@ file(GLOB sources CONFIGURE_DEPENDS
         "src/external/imgui/backends/imgui_impl_sdl2.h" "src/external/imgui/backends/imgui_impl_sdl2.cpp"
         "src/external/imgui/backends/imgui_impl_opengl3.h" "src/external/imgui/backends/imgui_impl_opengl3.cpp"
         "src/external/glad/src/glad.c" "src/external/glad/include/glad/glad.h" "src/external/glad/include/KHR/khrplatform.h"
+        "src/external/stb/stb_image.h"
 )
 
 include_directories(src/external/imgui
         src/external/imgui/backends
         src/external/glad/include
+        src/external/stb
 )
 
-add_executable(carnival ${sources})
+add_executable(carnival ${sources}
+        src/common/img.h)
 
 target_link_libraries(carnival
         PRIVATE

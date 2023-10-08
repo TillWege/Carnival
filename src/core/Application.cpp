@@ -6,6 +6,7 @@
 #include "Application.h"
 #include "../common/shader.h"
 #include "imgui_internal.h"
+#include "../common/img.h"
 
 using namespace carnival;
 
@@ -290,10 +291,8 @@ namespace carnival::core {
         }
     }
 
-
-
-
-    void Application::setupTriangle() {
+    void Application::setupTriangle()
+    {
         glGenVertexArrays(1, &rendering_context.VertexArrayID);
         glBindVertexArray(rendering_context.VertexArrayID);
         // This will identify our vertex buffer
@@ -305,7 +304,16 @@ namespace carnival::core {
         glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
     }
 
-    void Application::setupGUI(ImGuiID dockID) {
+    void Application::setupImage()
+    {
+        auto basepath = std::filesystem::current_path();
+        auto path = basepath / "src" / "MyImage01.jpg";
+
+        assert(LoadTextureFromFile(path.string().c_str(), &image_data.texture, &image_data.width, &image_data.height));
+    }
+
+    void Application::setupGUI(ImGuiID dockID)
+    {
         auto id1 = ImGui::DockBuilderSplitNode(dockID, ImGuiDir_Left, 0.2f, nullptr, &dockID);
         auto id2 = ImGui::DockBuilderSplitNode(dockID, ImGuiDir_Right, 0.2f, nullptr, &dockID);
         auto id3 = ImGui::DockBuilderSplitNode(dockID, ImGuiDir_Down, 0.2f, nullptr, &dockID);
@@ -349,7 +357,9 @@ namespace carnival::core {
         ImGui::End();
 
         ImGui::Begin("Viewport", nullptr);
-        ImGui::Text("Viewport Controls");
+
+        ImGui::Image((void*)(intptr_t)image_data.texture, ImVec2((float)image_data.width, (float)image_data.height));
+
         ImGui::End();
 
         ImGui::EndFrame();
@@ -389,7 +399,4 @@ namespace carnival::core {
 
         SDL_GL_SwapWindow(rendering_context.window_handle);
     }
-
-
-
 }

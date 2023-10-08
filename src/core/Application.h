@@ -24,6 +24,12 @@ namespace carnival::core {
         SDL_Joystick *joystick = nullptr;
     };
 
+    struct ImageData {
+        GLuint texture = 0;
+        int width = 0;
+        int height = 0;
+    };
+
     struct ApplicationState {
         int left_panel_width = 300;
         int right_panel_width = 300;
@@ -42,10 +48,12 @@ namespace carnival::core {
         ~Application();
         void Run();
         void setupTriangle();
+        void setupImage();
     private:
         RenderingContext rendering_context;
         InputContext input_context;
         ApplicationState app_state;
+        ImageData image_data;
 
         void InitSDL();
         void InitWindow();
