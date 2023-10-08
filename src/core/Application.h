@@ -4,6 +4,7 @@
 #include <string>
 #include <SDL2/SDL.h>
 #include "glad/glad.h"
+#include "imgui.h"
 
 namespace carnival::core {
     const int defWindowWidth = 1280,
@@ -52,6 +53,7 @@ namespace carnival::core {
         void InitImGui() const;
         void HandleEvents();
         void render();
+        void setupGUI(ImGuiID dockID);
         void renderGUI();
         void renderGL();
     };
