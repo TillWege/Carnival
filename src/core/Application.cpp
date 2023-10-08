@@ -109,9 +109,6 @@ namespace carnival::core {
                   << "."
                   << GLVersion.minor
                   << std::endl;
-
-
-        //glViewport(app_state.left_panel_width, 0, app_state.window_width - app_state.left_panel_width, app_state.window_height);
     }
 
     void Application::InitImGui() const {
@@ -122,7 +119,6 @@ namespace carnival::core {
         (void) io;
         io.IniFilename = nullptr;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
 
         setImGuiStyle();
 
@@ -150,6 +146,7 @@ namespace carnival::core {
         );
 
         SDL_SetWindowMinimumSize(rendering_context.window_handle, 500, 300);
+
     }
 
     void Application::InitSDL() {
@@ -211,8 +208,6 @@ namespace carnival::core {
                         case SDL_WINDOWEVENT_RESIZED:
                             app_state.window_width = event.window.data1;
                             app_state.window_height = event.window.data2;
-                            /*glViewport(app_state.left_panel_width, 0, app_state.window_width - app_state.left_panel_width,
-                                       app_state.window_height);*/
                             break;
                     }
                     break;
@@ -340,8 +335,6 @@ namespace carnival::core {
         GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
 
-        assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-
         image_data.texture = renderedTexture;
         image_data.framebuffer = FramebufferName;
         image_data.depthbuffer = depthrenderbuffer;
@@ -416,7 +409,11 @@ namespace carnival::core {
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
-        ImGui::Begin("Viewport", nullptr);
+        ImGuiWindowClass window_class;
+        window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoUndocking;
+
+        ImGui::SetNextWindowClass(&window_class);
+        ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse);
 
         auto size = ImGui::GetContentRegionAvail();
 
@@ -433,11 +430,12 @@ namespace carnival::core {
         ImGui::PopStyleVar();
 
         ImGui::EndFrame();
-        // rendering
+
         ImGui::Render();
+        // rendering
+
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
     }
 
     void Application::renderGL()
@@ -464,10 +462,14 @@ namespace carnival::core {
     }
 
     void Application::render() {
-        updateTexture();
+
+
+        if(app_state.resize_queued)
+            updateTexture();
 
         renderGL();
         renderGUI();
+
 
         SDL_GL_SwapWindow(rendering_context.window_handle);
     }
