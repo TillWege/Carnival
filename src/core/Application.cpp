@@ -424,7 +424,7 @@ namespace carnival::core {
         {
             app_state.viewport_width = (int)size.x;
             app_state.viewport_height = (int)size.y;
-            updateTexture();
+            app_state.resize_queued = true;
         }
 
         ImGui::Image((void*)(intptr_t)image_data.texture, ImVec2((float)image_data.width, (float)image_data.height));
@@ -445,6 +445,7 @@ namespace carnival::core {
         // 1st attribute buffer : vertices
         glViewport(0, 0, image_data.width, image_data.height);
         glBindFramebuffer(GL_FRAMEBUFFER, image_data.framebuffer);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, rendering_context.vertex_buffer);
         glVertexAttribPointer(
@@ -463,7 +464,7 @@ namespace carnival::core {
     }
 
     void Application::render() {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        updateTexture();
 
         renderGL();
         renderGUI();

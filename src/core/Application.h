@@ -36,6 +36,7 @@ namespace carnival::core {
         int viewport_width = 256;
         int viewport_height = 256;
         bool running = true;
+        bool resize_queued = false;
         int window_height = defWindowHeight;
         int window_width = defWindowWidth;
     };
