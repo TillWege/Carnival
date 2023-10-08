@@ -4,6 +4,12 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+/*auto basepath = std::filesystem::current_path();
+auto path = basepath / "src" / "MyImage01.jpg";
+
+assert(LoadTextureFromFile(path.string().c_str(), &image_data.texture, &image_data.width, &image_data.height));*/
+
+
 bool LoadTextureFromFile(const char* filename, GLuint* out_texture, int* out_width, int* out_height)
 {
     int image_width = 0;

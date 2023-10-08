@@ -26,18 +26,16 @@ namespace carnival::core {
 
     struct ImageData {
         GLuint texture = 0;
+        GLuint framebuffer = 0;
+        GLuint depthbuffer = 0;
         int width = 0;
         int height = 0;
     };
 
     struct ApplicationState {
-        int left_panel_width = 300;
-        int right_panel_width = 300;
-        int bottom_panel_height = 300;
-        int counter = 0;
+        int viewport_width = 256;
+        int viewport_height = 256;
         bool running = true;
-        bool show_demo_window = false;
-        bool show_another_window = false;
         int window_height = defWindowHeight;
         int window_width = defWindowWidth;
     };
@@ -64,6 +62,7 @@ namespace carnival::core {
         void setupGUI(ImGuiID dockID);
         void renderGUI();
         void renderGL();
+        void updateTexture();
     };
 
 }

@@ -15,7 +15,7 @@ namespace carnival::core {
             -1.0f, 1.0f, 0.0f,
             1.0f, 1.0f, 0.0f,
             -1.0f, -1.0f, 0.0f,
-            1.0f, -1.0f, 0.0f,
+            //1.0f, -1.0f, 0.0f,
     };
 
     Application::Application() {
@@ -111,7 +111,7 @@ namespace carnival::core {
                   << std::endl;
 
 
-        glViewport(app_state.left_panel_width, 0, app_state.window_width - app_state.left_panel_width, app_state.window_height);
+        //glViewport(app_state.left_panel_width, 0, app_state.window_width - app_state.left_panel_width, app_state.window_height);
     }
 
     void Application::InitImGui() const {
@@ -211,8 +211,8 @@ namespace carnival::core {
                         case SDL_WINDOWEVENT_RESIZED:
                             app_state.window_width = event.window.data1;
                             app_state.window_height = event.window.data2;
-                            glViewport(app_state.left_panel_width, 0, app_state.window_width - app_state.left_panel_width,
-                                       app_state.window_height);
+                            /*glViewport(app_state.left_panel_width, 0, app_state.window_width - app_state.left_panel_width,
+                                       app_state.window_height);*/
                             break;
                     }
                     break;
@@ -306,10 +306,53 @@ namespace carnival::core {
 
     void Application::setupImage()
     {
-        auto basepath = std::filesystem::current_path();
-        auto path = basepath / "src" / "MyImage01.jpg";
+        GLuint FramebufferName = 0;
+        glGenFramebuffers(1, &FramebufferName);
+        glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
 
-        assert(LoadTextureFromFile(path.string().c_str(), &image_data.texture, &image_data.width, &image_data.height));
+        GLuint renderedTexture;
+        glGenTextures(1, &renderedTexture);
+
+        // "Bind" the newly created texture : all future texture functions will modify this texture
+        glBindTexture(GL_TEXTURE_2D, renderedTexture);
+
+        image_data.width = app_state.viewport_width;
+        image_data.height = app_state.viewport_height;
+
+        // Give an empty image to OpenGL ( the last "0" )
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_data.width, image_data.height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+
+        // Poor filtering. Needed !
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+        // The depth buffer
+        GLuint depthrenderbuffer;
+        glGenRenderbuffers(1, &depthrenderbuffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, image_data.width, image_data.height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+
+        // Set "renderedTexture" as our colour attachement #0
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderedTexture, 0);
+
+        // Set the list of draw buffers.
+        GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+        glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+
+        assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
+        image_data.texture = renderedTexture;
+        image_data.framebuffer = FramebufferName;
+        image_data.depthbuffer = depthrenderbuffer;
+    }
+
+    void Application::updateTexture()
+    {
+        glDeleteTextures(1, &image_data.texture);
+        glDeleteRenderbuffers(1, &image_data.depthbuffer);
+        glDeleteFramebuffers(1, &image_data.framebuffer);
+        setupImage();
     }
 
     void Application::setupGUI(ImGuiID dockID)
@@ -329,6 +372,8 @@ namespace carnival::core {
 
     void Application::renderGUI()
     {
+        // Wichtig!
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(rendering_context.window_handle);
 
@@ -338,14 +383,27 @@ namespace carnival::core {
 
         ImGui::NewFrame();
 
+        ImGui::BeginMainMenuBar();
+
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("Quit")) {
+                app_state.running = false;
+            }
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMainMenuBar();
+
         ImGuiID dockID = ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
         if (firstFrame) {
             setupGUI(dockID);
             firstFrame = false;
         }
 
+
         ImGui::Begin("Left Panel", nullptr);
-        ImGui::Text("Left Panel Controls");
+        ImGui::Text("Render Controls");
+
         ImGui::End();
 
         ImGui::Begin("Right Panel", nullptr);
@@ -356,11 +414,23 @@ namespace carnival::core {
         ImGui::Text("Bottom Panel Controls");
         ImGui::End();
 
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+
         ImGui::Begin("Viewport", nullptr);
 
-        ImGui::Image((void*)(intptr_t)image_data.texture, ImVec2((float)image_data.width, (float)image_data.height));
+        auto size = ImGui::GetContentRegionAvail();
 
+        if((int)size.x != app_state.viewport_width || (int)size.y != app_state.viewport_height)
+        {
+            app_state.viewport_width = (int)size.x;
+            app_state.viewport_height = (int)size.y;
+            updateTexture();
+        }
+
+        ImGui::Image((void*)(intptr_t)image_data.texture, ImVec2((float)image_data.width, (float)image_data.height));
         ImGui::End();
+
+        ImGui::PopStyleVar();
 
         ImGui::EndFrame();
         // rendering
@@ -373,6 +443,8 @@ namespace carnival::core {
     void Application::renderGL()
     {
         // 1st attribute buffer : vertices
+        glViewport(0, 0, image_data.width, image_data.height);
+        glBindFramebuffer(GL_FRAMEBUFFER, image_data.framebuffer);
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, rendering_context.vertex_buffer);
         glVertexAttribPointer(
@@ -386,12 +458,11 @@ namespace carnival::core {
         // Draw the triangle !
         glUseProgram(rendering_context.shader_program);
 
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); // Starting from vertex 0; 3 vertices total -> 1 triangle
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
         glDisableVertexAttribArray(0);
     }
 
     void Application::render() {
-        glViewport(0, 0, app_state.window_width, app_state.window_height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         renderGL();
@@ -399,4 +470,6 @@ namespace carnival::core {
 
         SDL_GL_SwapWindow(rendering_context.window_handle);
     }
+
+
 }
