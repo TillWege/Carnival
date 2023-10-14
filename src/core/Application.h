@@ -39,6 +39,7 @@ namespace carnival::core {
         bool resize_queued = false;
         int window_height = defWindowHeight;
         int window_width = defWindowWidth;
+        bool secondOpen = true;
     };
 
     class Application {

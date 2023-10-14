@@ -358,7 +358,9 @@ namespace carnival::core {
         ImGui::DockBuilderDockWindow("Left Panel", id1);
         ImGui::DockBuilderDockWindow("Right Panel", id2);
         ImGui::DockBuilderDockWindow("Bottom Panel", id3);
-        ImGui::DockBuilderDockWindow("Viewport", dockID);
+        ImGui::DockBuilderDockWindow("Viewport-Container", dockID);
+        ImGui::DockBuilderDockWindow("Viewport-Container2", dockID);
+
 
         ImGui::DockBuilderFinish(dockID);
     }
@@ -393,27 +395,36 @@ namespace carnival::core {
             firstFrame = false;
         }
 
+        ImGuiWindowClass window_class_dockable;
+        window_class_dockable.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton;
 
+        ImGui::SetNextWindowClass(&window_class_dockable);
         ImGui::Begin("Left Panel", nullptr);
         ImGui::Text("Render Controls");
 
         ImGui::End();
 
+        ImGui::SetNextWindowClass(&window_class_dockable);
         ImGui::Begin("Right Panel", nullptr);
         ImGui::Text("Right Panel Controls");
+        if(ImGui::Button("Test"))
+        {
+            app_state.secondOpen = !app_state.secondOpen;
+        }
         ImGui::End();
 
+        ImGui::SetNextWindowClass(&window_class_dockable);
         ImGui::Begin("Bottom Panel", nullptr);
         ImGui::Text("Bottom Panel Controls");
         ImGui::End();
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
-        ImGuiWindowClass window_class;
-        window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoUndocking;
+        ImGuiWindowClass window_class_fixed;
+        window_class_fixed.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoUndocking | ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoDockingOverCentralNode;
+        ImGui::SetNextWindowClass(&window_class_fixed);
+        ImGui::Begin("Viewport-Container", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse);
 
-        ImGui::SetNextWindowClass(&window_class);
-        ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse);
 
         auto size = ImGui::GetContentRegionAvail();
 
@@ -425,7 +436,16 @@ namespace carnival::core {
         }
 
         ImGui::Image((void*)(intptr_t)image_data.texture, ImVec2((float)image_data.width, (float)image_data.height));
+
+
         ImGui::End();
+
+
+
+        if(app_state.secondOpen) {
+            ImGui::Begin("Viewport-Container2", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse);
+            ImGui::End();
+        }
 
         ImGui::PopStyleVar();
 
@@ -448,17 +468,17 @@ namespace carnival::core {
         glBindBuffer(GL_ARRAY_BUFFER, rendering_context.vertex_buffer);
         glVertexAttribPointer(
                 0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-                3,                  // size
-                GL_FLOAT,           // type
-                GL_FALSE,           // normalized?
-                0,                  // stride
-                (void *) nullptr     // array buffer offset
+                3,                   // size
+                GL_FLOAT,            // type
+                GL_FALSE,      // normalized?
+                0,                 // stride
+                (void *) nullptr  // array buffer offset
         );
         // Draw the triangle !
         glUseProgram(rendering_context.shader_program);
-
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
         glDisableVertexAttribArray(0);
+
     }
 
     void Application::render() {
