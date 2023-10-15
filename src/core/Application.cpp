@@ -395,6 +395,27 @@ namespace carnival::core {
             firstFrame = false;
         }
 
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+
+        ImGuiWindowClass window_class_fixed;
+        window_class_fixed.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoUndocking | ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoDockingOverCentralNode;
+        ImGui::SetNextWindowClass(&window_class_fixed);
+        ImGui::Begin("Viewport-Container", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse);
+
+        auto size = ImGui::GetContentRegionAvail();
+
+        if((int)size.x != app_state.viewport_width || (int)size.y != app_state.viewport_height)
+        {
+            app_state.viewport_width = (int)size.x;
+            app_state.viewport_height = (int)size.y;
+            app_state.resize_queued = true;
+        }
+
+        ImGui::Image((void*)(intptr_t)image_data.texture, ImVec2((float)image_data.width, (float)image_data.height));
+        ImGui::End();
+
+        ImGui::PopStyleVar();
+
         ImGuiWindowClass window_class_dockable;
         window_class_dockable.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton;
 
@@ -418,37 +439,6 @@ namespace carnival::core {
         ImGui::Text("Bottom Panel Controls");
         ImGui::End();
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-
-        ImGuiWindowClass window_class_fixed;
-        window_class_fixed.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoUndocking | ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoDockingOverCentralNode;
-        ImGui::SetNextWindowClass(&window_class_fixed);
-        ImGui::Begin("Viewport-Container", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse);
-
-
-        auto size = ImGui::GetContentRegionAvail();
-
-        if((int)size.x != app_state.viewport_width || (int)size.y != app_state.viewport_height)
-        {
-            app_state.viewport_width = (int)size.x;
-            app_state.viewport_height = (int)size.y;
-            app_state.resize_queued = true;
-        }
-
-        ImGui::Image((void*)(intptr_t)image_data.texture, ImVec2((float)image_data.width, (float)image_data.height));
-
-
-        ImGui::End();
-
-
-
-        if(app_state.secondOpen) {
-            ImGui::Begin("Viewport-Container2", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse);
-            ImGui::End();
-        }
-
-        ImGui::PopStyleVar();
-
         ImGui::EndFrame();
 
         ImGui::Render();
@@ -464,32 +454,30 @@ namespace carnival::core {
         glViewport(0, 0, image_data.width, image_data.height);
         glBindFramebuffer(GL_FRAMEBUFFER, image_data.framebuffer);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, rendering_context.vertex_buffer);
         glVertexAttribPointer(
-                0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-                3,                   // size
-                GL_FLOAT,            // type
-                GL_FALSE,      // normalized?
-                0,                 // stride
+                0,                // attribute 0. No particular reason for 0, but must match the layout in the shader.
+                3,                // size
+                GL_FLOAT,         // type
+                GL_FALSE,         // normalized?
+                0,                // stride
                 (void *) nullptr  // array buffer offset
         );
+
         // Draw the triangle !
         glUseProgram(rendering_context.shader_program);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
+        glDrawArrays(GL_LINE_STRIP, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
         glDisableVertexAttribArray(0);
-
     }
 
     void Application::render() {
-
-
         if(app_state.resize_queued)
             updateTexture();
 
         renderGL();
         renderGUI();
-
 
         SDL_GL_SwapWindow(rendering_context.window_handle);
     }
