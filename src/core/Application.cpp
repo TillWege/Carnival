@@ -119,6 +119,7 @@ namespace carnival::core {
         (void) io;
         io.IniFilename = nullptr;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
         setImGuiStyle();
 
@@ -439,11 +440,13 @@ namespace carnival::core {
         ImGui::Text("Bottom Panel Controls");
         ImGui::End();
 
-        ImGui::EndFrame();
+        ImGui::ShowDemoWindow();
 
         ImGui::Render();
-        // rendering
+        ImGui::EndFrame();
 
+
+        // rendering
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
@@ -479,7 +482,19 @@ namespace carnival::core {
         renderGL();
         renderGUI();
 
+        auto io = ImGui::GetIO();
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
+            SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+        }
+
         SDL_GL_SwapWindow(rendering_context.window_handle);
+
+
     }
 
 
